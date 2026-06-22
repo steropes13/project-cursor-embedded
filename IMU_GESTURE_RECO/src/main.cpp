@@ -1,5 +1,5 @@
 /*
-  IMU Classifier
+  IMU Classifier (fork for this project)
   This example uses the on-board IMU to start reading acceleration and gyroscope
   data from on-board IMU, once enough samples are read, it then uses a
   TensorFlow Lite (Micro) model to try to classify the movement as a known gesture.
@@ -40,7 +40,7 @@
 #include <tensorflow/lite/schema/schema_generated.h>
 
 #include "model.h"
-// we changed the threshold of the acceleration because it was too high to detect up-down movement and rest 
+
 const float accelerationThreshold = 2.0; // threshold of significant in G's
 const uint16_t numSamples = 128;
 
@@ -91,6 +91,10 @@ const int buttonPin = 11; //we choose the pin 11 for the external button
 
 
  //DRAFT (ISR)
+  // ISR interruption in case the button is pushed/released
+  //the ISR to call when the interrupt occurs; 
+  //this function must take no parameters and return nothing. This function is sometimes referred to as an interrupt service routine.
+  //Interrupt Service Routines (ISR)
  /*
 volatile bool buttonWasPressed = false; // to avoid reptiitions 
 unsigned long lastDebounceTime = 0;
@@ -104,18 +108,18 @@ unsigned long lastDebounceTime = 0;
 
 //volatile byte lastState = LOW; // low by default
 // array to map gesture index to a name
+
+
+
+
+
 const char* GESTURES[] = {
     "left-remote-2",
     "right-remote-2",
     "rest-1",
     "shake-1"
 };
-// const char* GESTURES[] = {
-//     "circle-1",
-//     "circle-2",
-//     "shake-1",
-//     "up-down-1"
-// };
+
 
 #define NUM_GESTURES (sizeof(GESTURES) / sizeof(GESTURES[0]))
 
@@ -125,10 +129,7 @@ void setup() {
   // Configuring pins 22, 23, and 24 as outputs to power the RGB LED
   pinMode(buttonPin, INPUT_PULLDOWN); //as we have a resistance we define it as pulldown (1 if pressed)
   //attachInterrupt(digitalPinToInterrupt(buttonPin),buttonInterrupt,RISING); // ISR 
-  // ISR interruption in case the button is pushed/released
-  //the ISR to call when the interrupt occurs; 
-  //this function must take no parameters and return nothing. This function is sometimes referred to as an interrupt service routine.
-  //Interrupt Service Routines (ISR)
+
 
   pinMode(22, OUTPUT);
   pinMode(23, OUTPUT);
@@ -160,7 +161,7 @@ while (!Serial && millis() - t < 3000);
   SERIAL_PRINTLN("IMU initialized successfully!");
 
   #ifndef COLLECT_DATA
-    // print out the samples rates of the IMUs
+    // print out the rates of the IMUs
     Serial.print("Accelerometer sample rate = ");
     Serial.print(IMU.accelerationSampleRate());
     Serial.println(" Hz");
@@ -182,8 +183,6 @@ while (!Serial && millis() - t < 3000);
         tflModel, tflOpsResolver, tensorArena, tensorArenaSize);
     tflInterpreter = &static_interpreter;
 
-    // Create an interpreter to run the model
-    //tflInterpreter = new tflite::MicroInterpreter(tflModel, tflOpsResolver, tensorArena, tensorArenaSize, &tflErrorReporter);
 
     // Allocate memory for the model's input and output tensors
     tflInterpreter->AllocateTensors();
@@ -192,10 +191,20 @@ while (!Serial && millis() - t < 3000);
     tflInputTensor = tflInterpreter->input(0);
     tflOutputTensor = tflInterpreter->output(0);
   #else
+    // Print out the different features (statistical and spectral) 
+    //we want to collect for the 
+    // accelerometer and the gyroscope for each coordinate (x,y,z)
       Serial.println("aX_mean,aX_stddev,aX_rms,aX_min,aX_max,aX_psdMean,aX_psdMax,aY_mean,aY_stddev,aY_rms,aY_min,aY_max,aY_psdMean,aY_psdMax,aZ_mean,aZ_stddev,aZ_rms,aZ_min,aZ_max,aZ_psdMean,aZ_psdMax,gX_mean,gX_stddev,gX_rms,gX_min,gX_max,gX_psdMean,gX_psdMax,gY_mean,gY_stddev,gY_rms,gY_min,gY_max,gY_psdMean,gY_psdMax,gZ_mean,gZ_stddev,gZ_rms,gZ_min,gZ_max,gZ_psdMean,gZ_psdMax"); 
   #endif
 }
 
+/** 
+* Computes the mean value in the float array (x, y or z)
+* used for the caractersitic extraction. 
+* @param data: array of float of a coordinate (x,y or z)
+* @param size: unsigned int corresponding on the size of the array 
+*
+*/
 float mean(float *data, uint16_t size = numSamples) {
   float sum = 0;
   for (int i = 0; i < size; i++) sum += data[i];
@@ -213,9 +222,9 @@ float stddev(float *data, uint16_t size = numSamples) {
 }
 
 /** 
-* Computes the max val in the float array,
+* Computes the max value in the float array,
 * used for the caractersitic extraction. 
-* @param data: array of float (gyroscope or distance)
+* @param data: array of float of a coordinate (x,y or z)
 * @param size: unsigned int corresponding on the size of the array 
 *
 */
@@ -228,9 +237,9 @@ float rms(float *data, uint16_t size = numSamples) {
 }
 
 /** 
- * Computes the min val in the float array,
+ * Computes the min value in the float array,
  * used for the caractersitic extraction. 
-* @param data: array of float (gyroscope or distance)
+* @param data: array of float of a coordinate (x,y or z)
 * @param size: unsigned int corresponding on the size of the array 
 *
 */
@@ -243,9 +252,9 @@ float minVal(float *data, uint16_t size = numSamples) {
 }
 
 /** 
- * Computes the max val in the float array,
+ * Computes the max value in the float array,
  * used for the caractersitic extraction. 
-* @param data: array of float (gyroscope or distance)
+* @param data: array of float of a coordinate (x,y or z)
 * @param size: unsigned int corresponding on the size of the array 
 *
 */
@@ -257,13 +266,21 @@ float maxVal(float *data, uint16_t size = numSamples) {
   return m;
 }
 
-/* 
-  Simple PSD approximation (no FFT)
-  We approximate the signal power in the frequency domain by using 
-  the squared difference between consecutive samples.
-  This is similar to measuring how "fast" the signal changes,
-  which correlates with high-frequency content.
-*/
+
+// ----------- SPECTRAL PART ----------------------
+
+
+/**
+ * Computes the mean Power Spectral Density (PSD) value.
+ * This feature represents the average spectral power over all frequency
+ * components and provides an estimate of the overall energy distribution
+ * of the signal in the frequency domain.
+ *
+ * @param data: array of float containing the PSD values of one IMU axis
+ *              (x,y or z axis)
+ * @param size: unsigned integer corresponding to the size of the PSD array
+ * @return the mean PSD value
+ */
 float psdMean(float *data, uint16_t size = numSamples/2) {
   float sum = 0;
   for (int i = 1; i < size; i++) {
@@ -273,6 +290,16 @@ float psdMean(float *data, uint16_t size = numSamples/2) {
   return sum / size;
 }
 
+/**
+ * Computes the maximum value of the Power Spectral Density (PSD).
+ * This feature represents the highest spectral power observed in the signal
+ * and is useful for identifying dominant high-energy frequency components.
+ *
+ * @param data: array of float containing the PSD values of one coordinate
+ *              (x, y or z axis)
+ * @param size: unsigned integer corresponding to the size of the PSD array
+ * @return the maximum PSD value found in the array
+ */
 float psdMax(float *data, uint16_t size = numSamples/2) {
   float maxp = 0;
   for (int i = 1; i < size; i++) {
@@ -281,16 +308,51 @@ float psdMax(float *data, uint16_t size = numSamples/2) {
   return maxp;
 }
 
+/**
+ * Computes the magnitude of a complex number.
+ * This function is used after the FFT computation to obtain the amplitude
+ * of each frequency component from its real and imaginary parts.
+ *
+ * @param re: real part of the complex number
+ * @param im: imaginary part of the complex number
+ * @return the magnitude of the complex number
+ */
 float complexAbs(float re, float im) {
   return sqrt(re * re + im * im);
 }
 
+
+/**
+ * Computes the Power Spectral Density (PSD) from the FFT coefficients.
+ * For each frequency bin, the PSD is obtained by squaring the magnitude
+ * of the complex FFT coefficient and normalizing it by the product of
+ * the number of frequency bins and the sampling frequency.
+ *
+ * The resulting PSD values overwrite the real-part array (dataRe).
+ *
+ * @param dataRe: array containing the real part of the FFT coefficients;
+ *                overwritten with the computed PSD values
+ * @param dataIm: array containing the imaginary part of the FFT coefficients
+ * @param samplingFreq: sampling frequency of the original signal (Hz)
+ * @param size: number of frequency bins considered
+ */
 void computePSD(float *dataRe, float *dataIm, float samplingFreq, uint16_t size = numSamples/2) {
   for(int i = 0; i < size; ++i){
     dataRe[i] = complexAbs(dataRe[i], dataIm[i]) * complexAbs(dataRe[i], dataIm[i]) / (size * samplingFreq);
   }
 }
 
+/**
+ * Computes the Fast Fourier Transform (FFT) of a real-valued signal.
+ * The imaginary part is first initialized to zero because the IMU data
+ * are purely real samples. The FFT is then computed in the forward
+ * direction and the frequency-domain coefficients overwrite the input arrays.
+ *
+ * @param data: array containing the time-domain samples; overwritten with
+ *              the real part of the FFT coefficients
+ * @param samplingFreq: sampling frequency of the signal (Hz)
+ * @param size: number of samples used to compute the FFT
+ */
 void computeFFT(float *data,float samplingFreq ,uint16_t size = numSamples) {
   memset(vImag, 0, sizeof(vImag)); // zero out the imaginary part
   ArduinoFFT<float> FFT = ArduinoFFT<float>(data, vImag, size, samplingFreq);
@@ -322,7 +384,7 @@ void sendKey(uint8_t hidCode) {
     report.length = 9;
     key_mouse.send_nb(&report);
     delay(10);
-    report.data[3] = 0;  // relâcher
+    report.data[3] = 0;  // released
     key_mouse.send_nb(&report);
 }
 /* (ISR -> DRAFT)
@@ -331,15 +393,31 @@ void buttonInterrupt() {
 }
 */
 uint32_t t0 = 0;
+
+
+
+/**
+ * Verifies at each call if the button has been pushed by the user 
+ * if that is the case add a delay of 500 miliseconds and then we send 
+ * the right-arrow key to the USB HID mouseKeyboard to the host. 
+ * the
+ * if that is not the case we simply return false. 
+ * This function is called at three different levels in our program in order 
+ * to get the user feedback as fast as possible at any time.. 
+ * First at the start of the loop, then every one second during inferance. 
+ * Then during each sample. 
+ *
+ * @return The button has been pushed or not by the user. 
+ */
 bool handleButton() {
   int buttonState = digitalRead(buttonPin);
   if (buttonState == HIGH && buttonPreviousState == LOW ) {   
       sendKey(0x4F); // Envoie Flèche Droite
       Serial.println("Button pressed -> Right Arrow!");
       
-      // On attend que l'utilisateur RELÂCHE le bouton pour éviter le spam
+      // Waits that the user released the button to avoid "spamming"
 
-      delay(500); // Anti-rebond au relâchement
+      delay(500); // Anti-rebund at the loosening 
       return true; 
     }
   buttonPreviousState = buttonState; 
@@ -373,25 +451,10 @@ if (handleButton()) return;
   }
 
 #else
-  float aSum = 0;
-  while (1) { // every 1 second
-//int state = digitalRead(buttonPin); //at each time in the loop it takes the state of the button 
-//Serial.print("Value of button : ");
-//Serial.println(state    ); 
-/*
-if (lastState == 0 && state == 1) {
-  key_mouse.printf(" "); 
-  Serial.println("Next slide (button pushed)");
-  delay(500);
-}
-lastState = state;
-*/
-
-    //lastState = state; 
-    //   waits 10 seconds 
-    //if (handleButton()) return; 
-if (handleButton()) return;
-    if(millis() - t0 > 10000){
+    float aSum = 0;
+    while (1) { // every 1 second
+    if (handleButton()) return;
+    if(millis() - t0 > 10000){ //every 10 seconds 
       t0 = millis();
       Serial.println("Timeout reached, starting new sample...");
       break;
@@ -412,18 +475,17 @@ if (handleButton()) return;
   }
 #endif
   // Sampling the data from the IMU until we have enough samples to fill our buffers
-  while (samplesRead < numSamples) { 
-//if (handleButton()) return; 
-if (handleButton()) return;
-    // check if new acceleration AND gyroscope data is available
-    if (IMU.accelerationAvailable() && IMU.gyroscopeAvailable()) {
-      // read the acceleration and gyroscope data
-      IMU.readAcceleration(ax[samplesRead], ay[samplesRead], az[samplesRead]);
-      IMU.readGyroscope(gx[samplesRead], gy[samplesRead], gz[samplesRead]);
-      // Save the timestamp of the sample
-      timestamp[samplesRead] = millis();
-      samplesRead++;
-    }
+while (samplesRead < numSamples) { 
+  if (handleButton()) return;
+      // check if new acceleration AND gyroscope data is available
+      if (IMU.accelerationAvailable() && IMU.gyroscopeAvailable()) {
+        // read the acceleration and gyroscope data
+        IMU.readAcceleration(ax[samplesRead], ay[samplesRead], az[samplesRead]);
+        IMU.readGyroscope(gx[samplesRead], gy[samplesRead], gz[samplesRead]);
+        // Save the timestamp of the sample
+        timestamp[samplesRead] = millis();
+        samplesRead++;
+      }
   }
   samplesRead = 0;
 
