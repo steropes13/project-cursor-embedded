@@ -1,0 +1,29 @@
+\begin{thebibliography}{1}
+
+\bibitem{arduino_nano}
+{Arduino}.
+\newblock Arduino nano 33 ble documentation, 2026.
+
+\bibitem{mbed}
+{Arm Limited}.
+\newblock Mbed os documentation, 2026.
+
+\bibitem{circuit_diagram}
+Circuit Diagram.
+\newblock Circuit diagram website, 2026.
+
+\bibitem{platformio}
+{PlatformIO Labs}.
+\newblock Platformio documentation, 2026.
+
+\bibitem{tensorflow_lite}
+{TensorFlow/TinyML}.
+\newblock Tensorflow lite for microcontrollers, 2026.
+
+\bibitem{Hut}
+{USB Implementers Forum}.
+\newblock Hid usage tables for universal serial bus (usb).
+\newblock Technical report, 2023.
+\newblock Section 10: Keyboard/Keypad Page.
+
+\end{thebibliography}
