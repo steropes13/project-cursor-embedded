@@ -1,12 +1,20 @@
-# IMU GESTURE RECO 
-This PlatformIO project is part of the 'First Assignment' of the 'Low-Power Embedded Systems' course. 
-In this project, we will perform gesture recognition using the IMU sensor of the Arduino Nano 33 BLE Sense.
+# Slideshow remote provided with TinyML \& USB HID control on Arduino Nano 33 BLE sense
+This PlatformIO project corresponds to the final project of the 'Low-Power Embedded Systems' course. I  re-used the first part of the project we did with another student (see (here)[https://github.com/steropes13/EMBEDDED-GESTURE-RECO#]). 
+More precisely, the part with the `ipynb` classifiction pipeline via Jupyter Notebook file and the writing 
+of the file  `platformio.ini` and the main idea of the `main.cpp` with the diverse environments. 
+
+In this project,  I perform gesture recognition using the IMU sensor of the Arduino Nano 33 BLE Sense to use it as a slideshow remote that can be recognized by the host OS (**I tried on Mac only**) as a keyboard.  
+I used here MBED library to perform the HIDmouseKeyboard recognition for a better compatibility (_ARM architecture in my case_).  
+
+I added on my solution (see `report/`  directory) some componenent for the user feedback and direct interaction : such as a button and LED.    
+
 The project is divided into three main parts:
 1. Collecting data from the IMU sensor;
 2. Training a Neural Network model for gesture recognition using the collected data;
 3. Implementing the trained model on the Arduino Nano 33 BLE Sense to perform real-time gesture recognition.
+4. Sending special keys to the host and mapping it (left/right arrow, Home)
 
-So this project is focused to be the first and the third part, while the second part is performed using a Jupyter Notebook that can be runned locally or on Google Colab.
+
 
 # Compiling the project
 
@@ -14,7 +22,7 @@ So this project is focused to be the first and the third part, while the second 
 1. Install VSCode on you PC;
 2. Install PlatformIO from the extension menu on VSCode;
 3. Clone the repository on your local machine;
-4. Open it using VSCode;
+4. Open it using VSCode (**especially the directory where platformio.ini is located**);
 5. After PlatformIO loads, select the Environment for you own board from the down bar;
 6. Click on Upload on the down bar;
 7. Open the Console.
